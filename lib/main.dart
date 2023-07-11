@@ -1,6 +1,9 @@
+import 'package:custom_email/html_contents.dart';
 import 'package:flutter/material.dart';
 import 'package:mailer/mailer.dart';
 import 'package:mailer/smtp_server.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+
 
 
 void main() {
@@ -47,6 +50,8 @@ class _CustomMailTemplateState extends State<CustomMailTemplate> {
   final recipientController = TextEditingController();
   final subjectController = TextEditingController();
   final bodyController = TextEditingController();
+  String senderEmail = 'fhfaisallll@gmail.com';
+  bool isSendingEmail = false; // Track the email sending state
 
   @override
   void dispose() {
@@ -71,9 +76,20 @@ class _CustomMailTemplateState extends State<CustomMailTemplate> {
               ),
             ),
           ),
+          Padding(
+            padding: EdgeInsets.all(16.0),
+            child: TextField(
+              controller: subjectController,
+              decoration: InputDecoration(
+                labelText: 'Subject',
+              ),
+            ),
+          ),
           ElevatedButton(
-            onPressed: () => sendEmail(),
-            child: Text('Send Email'),
+            onPressed: isSendingEmail ? null : sendEmail,
+            // Disable the button while sending email
+            child: isSendingEmail ? CircularProgressIndicator() : Text(
+                'Send Email'), // Show loading indicator or button text based on email sending state
           ),
         ],
       ),
@@ -83,33 +99,42 @@ class _CustomMailTemplateState extends State<CustomMailTemplate> {
   void sendEmail() async {
     final recipientEmail = recipientController.text;
     final subject = subjectController.text;
-    final htmlContent = '''
-    <!DOCTYPE html>
-    <html>
-      <body>
-        <h1>Welcome to My Company</h1>
-        <p>This is a custom email with a logo and button.</p>
-        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR5JYOy4b-4q-CI1pebHoX8z1bFHltmt2osgQ&usqp=CAU" alt="Company Logo">
-        <br><br>
-        <a href="https://example.com" style="background-color: #4CAF50; color: white; padding: 15px 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px;">Click Here</a>
-      </body>
-    </html>
-  ''';
 
     final smtpServer = gmail('fhfaisallll@gmail.com', 'dsbsnrqngrkbsabw');
     // Create the message
     final message = Message()
-      ..from = Address('fhfaisallll@gmail.com')
+      ..from = Address('${senderEmail}')
       ..recipients.add(recipientEmail)
       ..subject = subject
       ..html = htmlContent;
 
+    setState(() {
+      isSendingEmail = true; // Set the flag to true while sending email
+    });
+
     try {
       final sendReport = await send(message, smtpServer);
       print('Message sent: ${sendReport.toString()}');
+      showToast('Email sent successfully', true); // Show success message
     } catch (e) {
       print('Error sending email: $e');
+      showToast('Failed to send email', false); // Show error message
+    } finally {
+      setState(() {
+        isSendingEmail = false;
+      });
     }
+  }
+
+  void showToast(String message, bool isSuccess) {
+    Fluttertoast.showToast(
+      msg: message,
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: isSuccess ? Colors.green : Colors.red,
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
   }
 }
 
